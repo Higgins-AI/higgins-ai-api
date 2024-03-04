@@ -1,7 +1,8 @@
 import express from "express";
 import devRoute from "./dev.route";
-import completionsRoute from "./completions.route";
-import collectionsRoute from "./collections.route";
+import completionRoute from "./completion.route";
+import collectionRoute from "./collection.route";
+import chatRoute from "./chat.route";
 
 const router = express.Router();
 
@@ -11,7 +12,8 @@ const router = express.Router();
 router.get("/status", (req, res) => res.send("OK"));
 
 router.use("/dev", devRoute);
-router.use("/completions", completionsRoute);
-router.use("/collections", collectionsRoute);
+router.use("/completion", completionRoute);
+router.use("/collection", collectionRoute);
+router.use("/chat", chatRoute);
 
 export default router;
