@@ -8,6 +8,8 @@ const router = express.Router();
 
 router.route("/").get(async (req, res) => {
   try {
+    console.log("GET CHATS");
+
     const supabase = createClient({ req, res });
     const userId = req?.query?.user_id as string | undefined;
 
@@ -37,6 +39,8 @@ router.route("/").get(async (req, res) => {
 
 router.route("/").post(async (req, res) => {
   try {
+    console.log("POST CHAT");
+
     const supabase = createClient({ req, res });
     let title = (req?.body?.title as string | undefined) || "New Chat";
     const userId = req?.body?.user_id as string | undefined;
@@ -88,6 +92,8 @@ router.route("/").post(async (req, res) => {
 
 router.route("/:id").get(async (req, res) => {
   try {
+    console.log("GET CHAT");
+
     const supabase = createClient({ req, res });
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.params?.id;
@@ -114,6 +120,70 @@ router.route("/:id").get(async (req, res) => {
     console.log(error);
     res.status(500);
     res.send({ ok: false, data: [], message: "Something went wrong" });
+    return;
+  }
+});
+
+router.route("/:id").patch(async (req, res) => {
+  try {
+    console.log("PATCH CHAT");
+
+    const supabase = createClient({ req, res });
+    const title = req?.body?.title as string | undefined;
+    const chatId = req?.params?.id;
+
+    if (!title) {
+      res.status(400);
+      res.send({ ok: false, data: [], message: "No New Title provided" });
+      return;
+    }
+    const { data: chat, error: chatError } = await supabase
+      .from("chat")
+      .update({ title })
+      .eq("id", chatId)
+      .select()
+      .single();
+    if (chatError) {
+      res.status(500);
+      res.send({ ok: false, data: [], message: chatError.message });
+      return;
+    }
+    res.status(200);
+    res.send({ ok: true, data: chat, message: "success" });
+  } catch (error: any) {
+    console.log(error);
+    res.status(500);
+    res.send({ ok: false, data: [], message: "Something went wrong" });
+    return;
+  }
+});
+
+router.route("/:id").delete(async (req, res) => {
+  try {
+    console.log("DELETE CHAT");
+    const supabase = createClient({ req, res });
+    const chatId = req?.params?.id;
+
+    const { error } = await supabase
+      .from("chat")
+      .delete()
+      .eq("id", chatId)
+      .single();
+    if (error) {
+      res.status(500);
+      res.send({ ok: false, data: [], message: error.message });
+      console.log(res);
+      return;
+    }
+    res.status(200);
+    res.send({ ok: true, data: [], message: "success" });
+    console.log(res);
+    return;
+  } catch (error: any) {
+    console.log(error);
+    res.status(500);
+    res.send({ ok: false, data: [], message: "Something went wrong" });
+
     return;
   }
 });

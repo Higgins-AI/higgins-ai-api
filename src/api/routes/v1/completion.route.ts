@@ -64,7 +64,6 @@ router.route("/").post(async (req, res) => {
         | undefined) || [];
     const userId = req?.body?.user_id as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
-    console.log(messages);
     if (!userInput) {
       res.status(400);
       res.send({ ok: false, data: [], message: "No User Input Provided" });
