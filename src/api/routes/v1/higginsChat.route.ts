@@ -3,19 +3,25 @@ import dotenv from "dotenv";
 import cookie from "cookie-parser";
 import { createClient } from "../../utils/utils";
 import jwt from "jsonwebtoken";
+
 dotenv.config();
 
 const router = express.Router();
 
 router.route("/").get(async (req, res) => {
   try {
-    console.log("GET CHATS");
-
+    console.log("GET HIGGINS CHATS");
     const userId = req?.query?.user_id as string | undefined;
+    const organization = req?.query?.organization as string | undefined;
 
     if (!userId) {
       res.status(400);
       res.send({ ok: false, data: [], message: "Authentication Error" });
+      return;
+    }
+    if (!organization) {
+      res.status(400);
+      res.send({ ok: false, data: [], message: "No Organization provided" });
       return;
     }
     const token = jwt.sign(
@@ -23,13 +29,12 @@ router.route("/").get(async (req, res) => {
       process.env.SUPABASE_JWT_SECRET!
     );
     const supabase = createClient({ req, res }, token);
-
     const { data: chats, error: chatsError } = await supabase
-      .from("chat")
+      .from("higgins_chat")
       .select()
-      .eq("user_id", userId);
-    console.log("TOKEN: ", token);
-
+      .eq("user_id", userId)
+      .eq("organization", organization)
+      .order("created_at", { ascending: true });
     if (chatsError) {
       res.status(500);
       res.send({ ok: false, data: [], message: chatsError.message });
@@ -47,11 +52,13 @@ router.route("/").get(async (req, res) => {
 
 router.route("/").post(async (req, res) => {
   try {
-    console.log("POST CHAT");
+    console.log("POST HIGGINS CHAT");
+
     let title = (req?.body?.title as string | undefined) || "New Chat";
     const userId = req?.body?.user_id as string | undefined;
     const createdAt = req?.body?.created_at as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
+    const organization = req?.body?.organization as string | undefined;
 
     if (!userId) {
       res.status(400);
@@ -71,15 +78,26 @@ router.route("/").post(async (req, res) => {
       });
       return;
     }
+    if (!organization) {
+      res.status(400);
+      res.send({
+        ok: false,
+        data: [],
+        message: "No Organization provided",
+      });
+      return;
+    }
     const token = jwt.sign(
       { sub: userId, role: "authenticated" },
       process.env.SUPABASE_JWT_SECRET!
     );
     const supabase = createClient({ req, res }, token);
+
     const { data: count, error: countError } = await supabase
-      .from("chat")
+      .from("higgins_chat")
       .select()
       .eq("user_id", userId)
+      .eq("organization", organization)
       .like("title", `%${title}%`);
     if (countError) {
       res.status(500);
@@ -90,8 +108,14 @@ router.route("/").post(async (req, res) => {
       title += ` ${count.length}`;
     }
     const { data: newChat, error: newChatError } = await supabase
-      .from("chat")
-      .upsert({ id: chatId, created_at: createdAt, user_id: userId, title })
+      .from("higgins_chat")
+      .upsert({
+        id: chatId,
+        created_at: createdAt,
+        user_id: userId,
+        organization,
+        title,
+      })
       .select()
       .single();
     if (newChatError) {
@@ -112,7 +136,7 @@ router.route("/").post(async (req, res) => {
 
 router.route("/:id").get(async (req, res) => {
   try {
-    console.log("GET CHAT");
+    console.log("GET HIGGINS CHAT");
 
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.params?.id;
@@ -128,7 +152,7 @@ router.route("/:id").get(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data: chats, error: chatsError } = await supabase
-      .from("chat")
+      .from("higgins_chat")
       .select()
       .eq("user_id", userId)
       .eq("id", chatId)
@@ -150,11 +174,11 @@ router.route("/:id").get(async (req, res) => {
 
 router.route("/:id").patch(async (req, res) => {
   try {
-    console.log("PATCH CHAT");
+    console.log("PATCH HIGGINS CHAT");
 
     const title = req?.body?.title as string | undefined;
     const chatId = req?.params?.id;
-    const userId = req?.body?.user_id as string | undefined;
+    const userId = req?.body.user_id as string | undefined;
 
     if (!title) {
       res.status(400);
@@ -172,7 +196,7 @@ router.route("/:id").patch(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data: chat, error: chatError } = await supabase
-      .from("chat")
+      .from("higgins_chat")
       .update({ title })
       .eq("id", chatId)
       .select()
@@ -195,7 +219,6 @@ router.route("/:id").patch(async (req, res) => {
 router.route("/:id").delete(async (req, res) => {
   try {
     console.log("DELETE CHAT");
-    const supabase = createClient({ req, res });
     const chatId = req?.params?.id;
     const userId = req?.query?.user_id;
 
@@ -204,9 +227,14 @@ router.route("/:id").delete(async (req, res) => {
       res.send({ ok: false, data: [], message: "Authentication Error" });
       return;
     }
+    const token = jwt.sign(
+      { sub: userId, role: "authenticated" },
+      process.env.SUPABASE_JWT_SECRET!
+    );
+    const supabase = createClient({ req, res }, token);
 
     const { error } = await supabase
-      .from("chat")
+      .from("higgins_chat")
       .delete()
       .eq("id", chatId)
       .eq("user_id", userId)
@@ -214,10 +242,12 @@ router.route("/:id").delete(async (req, res) => {
     if (error) {
       res.status(500);
       res.send({ ok: false, data: [], message: error.message });
+      console.log(res);
       return;
     }
     res.status(200);
     res.send({ ok: true, data: [], message: "success" });
+    console.log(res);
     return;
   } catch (error: any) {
     console.log(error);

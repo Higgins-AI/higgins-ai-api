@@ -3,11 +3,19 @@ import { Database } from "../../types/supabase.types";
 import cookieParser from "cookie-parser";
 import { Request, Response } from "express";
 
-export const createClient = (context: { req: Request; res: Response }) => {
+export const createClient = (
+  context: { req: Request; res: Response },
+  token?: string
+) => {
   return createServerClient<Database>(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_ANON_KEY!,
     {
+      global: {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      },
       cookies: {
         get: (key) => {
           if (!key) return;
