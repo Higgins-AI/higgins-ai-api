@@ -218,7 +218,7 @@ router.route("/:id").patch(async (req, res) => {
 
 router.route("/:id").delete(async (req, res) => {
   try {
-    console.log("DELETE CHAT");
+    console.log("DELETE HIGGINS CHAT");
     const chatId = req?.params?.id;
     const userId = req?.query?.user_id;
 
@@ -240,14 +240,13 @@ router.route("/:id").delete(async (req, res) => {
       .eq("user_id", userId)
       .single();
     if (error) {
+      console.log(res);
       res.status(500);
       res.send({ ok: false, data: [], message: error.message });
-      console.log(res);
       return;
     }
     res.status(200);
     res.send({ ok: true, data: [], message: "success" });
-    console.log(res);
     return;
   } catch (error: any) {
     console.log(error);

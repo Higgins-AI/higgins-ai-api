@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cookie from "cookie-parser";
 import { createClient } from "../../utils/utils";
+import jwt from "jsonwebtoken";
 dotenv.config();
 
 const router = express.Router();
@@ -9,7 +10,6 @@ const router = express.Router();
 router.route("/").get(async (req, res) => {
   try {
     console.log("GET FEEDBACK");
-    const supabase = createClient({ req, res });
     const userId = req?.query?.user_id as string | undefined;
     const completionId = req?.query?.completion_id as string | undefined;
     const chatId = req?.query?.chat_id as string | undefined;
@@ -41,13 +41,17 @@ router.route("/").get(async (req, res) => {
       });
       return;
     }
+    const token = jwt.sign(
+      { sub: userId, role: "authenticated" },
+      process.env.SUPABASE_JWT_SECRET!
+    );
+    const supabase = createClient({ req, res }, token);
     const { data, error } = await supabase
       .from("completion_feedback")
       .select()
       .eq("user_id", userId)
       .eq("completion_id", completionId)
       .eq("chat_id", chatId);
-    console.log(data);
     if (!error) {
       res.status(200);
       res.send({ ok: true, data: data, message: "success" });
@@ -66,7 +70,6 @@ router.route("/").get(async (req, res) => {
 router.route("/").post(async (req, res) => {
   try {
     console.log("POST FEEDBACK");
-    const supabase = createClient({ req, res });
     const userId = req?.body?.user_id as string | undefined;
     const completionId = req?.body?.completion_id as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
@@ -74,7 +77,6 @@ router.route("/").post(async (req, res) => {
     const rating = req?.body?.rating as string | undefined;
     const prompt = req?.body?.prompt as string | undefined;
     const completion = req?.body?.completion as string | undefined;
-    console.log(chatId);
     if (!chatId) {
       res.status(400);
       res.send({
@@ -138,6 +140,11 @@ router.route("/").post(async (req, res) => {
       });
       return;
     }
+    const token = jwt.sign(
+      { sub: userId, role: "authenticated" },
+      process.env.SUPABASE_JWT_SECRET!
+    );
+    const supabase = createClient({ req, res }, token);
     const { data, error } = await supabase
       .from("completion_feedback")
       .upsert([
@@ -173,7 +180,6 @@ router.route("/").post(async (req, res) => {
 router.route("/").delete(async (req, res) => {
   try {
     console.log("DELETE FEEDBACK");
-    const supabase = createClient({ req, res });
     const userId = req?.query?.user_id as string | undefined;
     const completionId = req?.query?.completion_id as string | undefined;
     const chatId = req?.query?.chat_id as string | undefined;
@@ -205,6 +211,11 @@ router.route("/").delete(async (req, res) => {
       });
       return;
     }
+    const token = jwt.sign(
+      { sub: userId, role: "authenticated" },
+      process.env.SUPABASE_JWT_SECRET!
+    );
+    const supabase = createClient({ req, res }, token);
     const { error } = await supabase
       .from("completion_feedback")
       .delete()

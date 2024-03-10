@@ -28,7 +28,6 @@ router.route("/").get(async (req, res) => {
       .from("chat")
       .select()
       .eq("user_id", userId);
-    console.log("TOKEN: ", token);
 
     if (chatsError) {
       res.status(500);
@@ -195,7 +194,6 @@ router.route("/:id").patch(async (req, res) => {
 router.route("/:id").delete(async (req, res) => {
   try {
     console.log("DELETE CHAT");
-    const supabase = createClient({ req, res });
     const chatId = req?.params?.id;
     const userId = req?.query?.user_id;
 
@@ -204,6 +202,11 @@ router.route("/:id").delete(async (req, res) => {
       res.send({ ok: false, data: [], message: "Authentication Error" });
       return;
     }
+    const token = jwt.sign(
+      { sub: userId, role: "authenticated" },
+      process.env.SUPABASE_JWT_SECRET!
+    );
+    const supabase = createClient({ req, res }, token);
 
     const { error } = await supabase
       .from("chat")

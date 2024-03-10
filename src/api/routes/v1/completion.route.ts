@@ -128,7 +128,6 @@ router.route("/").post(async (req, res) => {
         res.send({ ok: false, data: [], message: error.message });
         return;
       }
-      console.log(data);
       res.status(200);
       res.send({ ok: true, data: data, message: "success" });
     } else {
