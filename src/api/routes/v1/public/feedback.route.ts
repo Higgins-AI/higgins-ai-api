@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cookie from "cookie-parser";
-import { createClient } from "../../utils/utils";
+import { createClient } from "../../../utils/utils";
 import jwt from "jsonwebtoken";
 dotenv.config();
 
@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.route("/").get(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – GET FEEDBACK`);
+    console.log(`USER_ID: ${req?.query?.user_id} – GET PUBLIC FEEDBACK`);
     const userId = req?.query?.user_id as string | undefined;
     const completionId = req?.query?.completion_id as string | undefined;
     const chatId = req?.query?.chat_id as string | undefined;
@@ -47,7 +47,7 @@ router.route("/").get(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data, error } = await supabase
-      .from("completion_feedback")
+      .from("public_completion_feedback")
       .select()
       .eq("user_id", userId)
       .eq("completion_id", completionId)
@@ -69,7 +69,7 @@ router.route("/").get(async (req, res) => {
 
 router.route("/").post(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.body?.user_id} – POST FEEDBACK`);
+    console.log(`USER_ID: ${req?.body?.user_id} – POST PUBLIC FEEDBACK`);
     const userId = req?.body?.user_id as string | undefined;
     const completionId = req?.body?.completion_id as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
@@ -146,7 +146,7 @@ router.route("/").post(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data, error } = await supabase
-      .from("completion_feedback")
+      .from("public_completion_feedback")
       .upsert([
         {
           user_id: userId,
@@ -179,7 +179,7 @@ router.route("/").post(async (req, res) => {
 
 router.route("/").delete(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – DELETE FEEDBACK`);
+    console.log(`USER_ID: ${req?.query?.user_id} – DELETE PUBLIC FEEDBACK`);
     const userId = req?.query?.user_id as string | undefined;
     const completionId = req?.query?.completion_id as string | undefined;
     const chatId = req?.query?.chat_id as string | undefined;
@@ -217,7 +217,7 @@ router.route("/").delete(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { error } = await supabase
-      .from("completion_feedback")
+      .from("public_completion_feedback")
       .delete()
       .eq("user_id", userId)
       .eq("completion_id", completionId)

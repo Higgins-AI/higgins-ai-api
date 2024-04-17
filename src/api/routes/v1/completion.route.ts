@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.route("/").get(async (req, res) => {
   try {
-    console.log("GET COMPLETIONS");
+    console.log(`USER_ID: ${req?.query?.user_id} – GET COMPLETIONS`);
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.query?.chat_id as string | undefined;
     if (!userId) {
@@ -54,7 +54,7 @@ router.route("/").get(async (req, res) => {
 
 router.route("/").post(async (req, res) => {
   try {
-    console.log("POST COMPLETION");
+    console.log(`USER_ID: ${req?.body?.user_id} – POST COMPLETION`);
     const userInput = req?.body?.user_input as string | undefined;
     const messages =
       (req?.body?.messages as
@@ -85,7 +85,7 @@ router.route("/").post(async (req, res) => {
     const response = await axios.post(
       `https://api.openai.com/v1/chat/completions`,
       {
-        model: "gpt-3.5-turbo",
+        model: "gpt-4-turbo-preview",
         messages: [
           ...messages,
           {
@@ -146,7 +146,7 @@ router.route("/").post(async (req, res) => {
 
 router.route("/:id").get(async (req, res) => {
   try {
-    console.log("GET COMPLETION");
+    console.log(`USER_ID: ${req?.query?.user_id} – GET COMPLETION`);
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.query?.chat_id as string | undefined;
     const completionId = req?.params?.id;

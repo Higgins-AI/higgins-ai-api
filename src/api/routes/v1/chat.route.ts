@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.route("/").get(async (req, res) => {
   try {
-    console.log("GET CHATS");
+    console.log(`USER_ID: ${req?.query?.user_id} – GET CHATS`);
 
     const userId = req?.query?.user_id as string | undefined;
 
@@ -46,7 +46,7 @@ router.route("/").get(async (req, res) => {
 
 router.route("/").post(async (req, res) => {
   try {
-    console.log("POST CHAT");
+    console.log(`USER_ID: ${req?.body?.user_id} – POST CHAT`);
     let title = (req?.body?.title as string | undefined) || "New Chat";
     const userId = req?.body?.user_id as string | undefined;
     const createdAt = req?.body?.created_at as string | undefined;
@@ -111,7 +111,7 @@ router.route("/").post(async (req, res) => {
 
 router.route("/:id").get(async (req, res) => {
   try {
-    console.log("GET CHAT");
+    console.log(`USER_ID: ${req?.query?.user_id} – GET CHAT`);
 
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.params?.id;
@@ -149,7 +149,7 @@ router.route("/:id").get(async (req, res) => {
 
 router.route("/:id").patch(async (req, res) => {
   try {
-    console.log("PATCH CHAT");
+    console.log(`USER_ID: ${req?.body?.user_id} – PATCH CHAT`);
 
     const title = req?.body?.title as string | undefined;
     const chatId = req?.params?.id;
@@ -193,7 +193,7 @@ router.route("/:id").patch(async (req, res) => {
 
 router.route("/:id").delete(async (req, res) => {
   try {
-    console.log("DELETE CHAT");
+    console.log(`USER_ID: ${req?.query?.user_id} – DELETE CHAT`);
     const chatId = req?.params?.id;
     const userId = req?.query?.user_id;
 

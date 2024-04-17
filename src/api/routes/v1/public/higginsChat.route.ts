@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cookie from "cookie-parser";
-import { createClient } from "../../utils/utils";
+import { createClient } from "../../../utils/utils";
 import jwt from "jsonwebtoken";
 
 dotenv.config();
@@ -10,18 +10,18 @@ const router = express.Router();
 
 router.route("/").get(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – GET HIGGINS CHATS`);
+    console.log(`USER_ID: ${req?.query?.user_id} – GET HIGGINS PUBLIC CHATS`);
     const userId = req?.query?.user_id as string | undefined;
-    const organization = req?.query?.organization as string | undefined;
+    const organizationId = req?.query?.organization_id as string | undefined;
 
     if (!userId) {
       res.status(400);
       res.send({ ok: false, data: [], message: "Authentication Error" });
       return;
     }
-    if (!organization) {
+    if (!organizationId) {
       res.status(400);
-      res.send({ ok: false, data: [], message: "No Organization provided" });
+      res.send({ ok: false, data: [], message: "No Organization ID provided" });
       return;
     }
     const token = jwt.sign(
@@ -30,10 +30,10 @@ router.route("/").get(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data: chats, error: chatsError } = await supabase
-      .from("higgins_chat")
+      .from("higgins_public_chat")
       .select()
       .eq("user_id", userId)
-      .eq("organization", organization)
+      .eq("organization_id", organizationId)
       .order("created_at", { ascending: true });
     if (chatsError) {
       res.status(500);
@@ -52,13 +52,13 @@ router.route("/").get(async (req, res) => {
 
 router.route("/").post(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.body?.user_id} – POST HIGGINS CHAT`);
+    console.log(`USER_ID: ${req?.body?.user_id} – POST HIGGINS PUBLIC CHAT`);
 
     let title = (req?.body?.title as string | undefined) || "New Chat";
     const userId = req?.body?.user_id as string | undefined;
     const createdAt = req?.body?.created_at as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
-    const organization = req?.body?.organization as string | undefined;
+    const organizationId = req?.body?.organization_id as string | undefined;
 
     if (!userId) {
       res.status(400);
@@ -67,6 +67,7 @@ router.route("/").post(async (req, res) => {
         data: [],
         message: "Authentication Error",
       });
+      console.log("ERROR: No user ID provided");
       return;
     }
     if (!chatId) {
@@ -76,15 +77,17 @@ router.route("/").post(async (req, res) => {
         data: [],
         message: "Invalid Request",
       });
+      console.log("ERROR: No chat ID provided");
       return;
     }
-    if (!organization) {
+    if (!organizationId) {
       res.status(400);
       res.send({
         ok: false,
         data: [],
         message: "No Organization provided",
       });
+      console.log("ERROR: No organization ID provided");
       return;
     }
     const token = jwt.sign(
@@ -94,10 +97,10 @@ router.route("/").post(async (req, res) => {
     const supabase = createClient({ req, res }, token);
 
     const { data: count, error: countError } = await supabase
-      .from("higgins_chat")
+      .from("higgins_public_chat")
       .select()
       .eq("user_id", userId)
-      .eq("organization", organization)
+      .eq("organization_id", organizationId)
       .like("title", `%${title}%`);
     if (countError) {
       res.status(500);
@@ -108,12 +111,12 @@ router.route("/").post(async (req, res) => {
       title += ` ${count.length}`;
     }
     const { data: newChat, error: newChatError } = await supabase
-      .from("higgins_chat")
+      .from("higgins_public_chat")
       .upsert({
         id: chatId,
         created_at: createdAt,
         user_id: userId,
-        organization,
+        organization_id: organizationId,
         title,
       })
       .select()
@@ -136,7 +139,7 @@ router.route("/").post(async (req, res) => {
 
 router.route("/:id").get(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – GET HIGGINS CHAT`);
+    console.log(`USER_ID: ${req?.query?.user_id} – GET HIGGINS PUBLIC CHAT`);
 
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.params?.id;
@@ -152,7 +155,7 @@ router.route("/:id").get(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data: chats, error: chatsError } = await supabase
-      .from("higgins_chat")
+      .from("higgins_public_chat")
       .select()
       .eq("user_id", userId)
       .eq("id", chatId)
@@ -174,7 +177,7 @@ router.route("/:id").get(async (req, res) => {
 
 router.route("/:id").patch(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.body?.user_id} – PATCH HIGGINS CHAT`);
+    console.log(`USER_ID: ${req?.body?.user_id} – PATCH HIGGINS PUBLIC CHAT`);
 
     const title = req?.body?.title as string | undefined;
     const chatId = req?.params?.id;
@@ -196,7 +199,7 @@ router.route("/:id").patch(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data: chat, error: chatError } = await supabase
-      .from("higgins_chat")
+      .from("higgins_public_chat")
       .update({ title })
       .eq("id", chatId)
       .select()
@@ -218,7 +221,7 @@ router.route("/:id").patch(async (req, res) => {
 
 router.route("/:id").delete(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – DELETE HIGGINS CHATS`);
+    console.log(`USER_ID: ${req?.query?.user_id} – DELETE HIGGINS PUBLIC CHAT`);
     const chatId = req?.params?.id;
     const userId = req?.query?.user_id;
 
@@ -234,7 +237,7 @@ router.route("/:id").delete(async (req, res) => {
     const supabase = createClient({ req, res }, token);
 
     const { error } = await supabase
-      .from("higgins_chat")
+      .from("higgins_public_chat")
       .delete()
       .eq("id", chatId)
       .eq("user_id", userId)

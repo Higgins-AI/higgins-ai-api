@@ -3,15 +3,15 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import axios from "axios";
-import { createClient } from "../../utils/utils";
-import { OpenAiCompletion } from "../../../types/types";
+import { createClient } from "../../../utils/utils";
+import { OpenAiCompletion } from "../../../../types/types";
 import jwt from "jsonwebtoken";
 dotenv.config();
 
 const router = express.Router();
 
 const chromaClient = new ChromaClient({
-  path: process.env.CHROMADB_PRO_URL,
+  path: process.env.CHROMADB_PUBLIC_URL,
 });
 const openAIEmbedder = new OpenAIEmbeddingFunction({
   openai_api_key: process.env.OPENAI_API_KEY!,
@@ -26,7 +26,7 @@ const getRelatedDocs = async (inputString: string, organization: string) => {
     queryTexts: inputString,
     nResults: 5,
   });
-  if (!documents.documents) {
+  if (!documents?.documents) {
     return undefined;
   }
   return documents.documents;
@@ -34,7 +34,9 @@ const getRelatedDocs = async (inputString: string, organization: string) => {
 
 router.route("/").get(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – GET HIGGINS COMPLETIONS`);
+    console.log(
+      `USER_ID: ${req?.query?.user_id} – GET HIGGINS PUBLIC COMPLETIONS`
+    );
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.query?.chat_id as string | undefined;
     if (!userId) {
@@ -53,7 +55,7 @@ router.route("/").get(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data, error } = await supabase
-      .from("higgins_chat_completion")
+      .from("higgins_public_chat_completion")
       .select()
       .eq("user_id", userId)
       .eq("chat_id", chatId)
@@ -76,7 +78,9 @@ router.route("/").get(async (req, res) => {
 
 router.route("/").post(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.body?.user_id} – POST HIGGINS COMPLETION`);
+    console.log(
+      `USER_ID: ${req?.body?.user_id} – POST HIGGINS PUBLIC COMPLETION`
+    );
     const systemDirective = req?.body?.system_directive as string | undefined;
     const userInput = req?.body?.user_input as string | undefined;
     const messages =
@@ -143,7 +147,7 @@ router.route("/").post(async (req, res) => {
       const completionData = response.data as OpenAiCompletion;
 
       const { data, error } = await supabase
-        .from("higgins_chat_completion")
+        .from("higgins_public_chat_completion")
         .insert({
           id: completionData.id,
           object: completionData.object,
@@ -186,7 +190,9 @@ router.route("/").post(async (req, res) => {
 
 router.route("/:id").get(async (req, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – GET HIGGINS COMPLETION`);
+    console.log(
+      `USER_ID: ${req?.query?.user_id} – GET HIGGINS PUBLIC COMPLETION`
+    );
     const userId = req?.query?.user_id as string | undefined;
     const chatId = req?.params?.id as string | undefined;
     const completionId = req?.params?.id;
@@ -206,7 +212,7 @@ router.route("/:id").get(async (req, res) => {
     );
     const supabase = createClient({ req, res }, token);
     const { data, error } = await supabase
-      .from("higgins_chat_completion")
+      .from("higgins_public_chat_completion")
       .select()
       .eq("user_id", userId)
       .eq("chat_id", chatId)
