@@ -142,6 +142,7 @@ router.route("/:id").get(async (req, res) => {
     const chatId = req?.params?.id;
 
     if (!userId) {
+      console.log("No User ID Provided");
       res.status(400);
       res.send({ ok: false, data: [], message: "Authentication Error" });
       return;
@@ -158,6 +159,7 @@ router.route("/:id").get(async (req, res) => {
       .eq("id", chatId)
       .single();
     if (chatsError) {
+      console.log(chatsError.message);
       res.status(500);
       res.send({ ok: false, data: [], message: chatsError.message });
       return;
