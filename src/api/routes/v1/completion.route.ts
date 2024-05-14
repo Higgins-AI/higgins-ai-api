@@ -123,6 +123,7 @@ router.route('/').post(async (req, res) => {
           user_id: userId,
           chat_id: chatId,
           prompt: userInput,
+          documents: supportingDocs as string[] | null | undefined,
         })
         .select()
         .single();
