@@ -92,7 +92,7 @@ router.route('/').post(async (req, res) => {
           ...messages,
           {
             role: 'system',
-            content: `Your name is Higgins. You are a helpful AI assistant. You may be provided with some supporting context that you can use to help you respond to the user's next prompt. If the supporting context does not closely relate to the user's prompt, ignore it as you formulate a response. If the user's prompt refers to any previous messages, ignore the supporting context as you formulate a response. The supporting context will be in the following format: <context>supporting context</context>.
+            content: `Your name is Higgins. You are a helpful AI assistant. You may be provided with some supporting context that you can use to help you respond to the user's next prompt. If the supporting context does not closely relate to the user's prompt, ignore it as you formulate a response. If the user's prompt refers to any previous messages, ignore the supporting context as you formulate a response. Your response should always be in markdown format. The supporting context will be in the following format: <context>supporting context</context>.
     
             <context>${supportingDocs}</context>`,
           },
