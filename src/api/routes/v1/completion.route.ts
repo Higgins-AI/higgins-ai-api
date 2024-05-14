@@ -84,6 +84,7 @@ router.route('/').post(async (req, res) => {
     const docs = await getRelatedDocs(userInput, 'higgins');
     const supportingDocs = docs?.at(0)?.map((doc) => doc?.replace('\n', ' '));
     const supabase = createClient({ req, res }, token);
+    console.log(supportingDocs);
     const response = await axios.post(
       `https://api.openai.com/v1/chat/completions`,
       {
