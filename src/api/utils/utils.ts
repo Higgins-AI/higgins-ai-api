@@ -3,6 +3,9 @@ import { Database } from '../../types/supabase.types';
 import cookieParser from 'cookie-parser';
 import { Request, Response } from 'express';
 import { ChromaClient, OpenAIEmbeddingFunction } from 'chromadb';
+import { google } from 'googleapis';
+import axios from 'axios';
+import jsdom from 'jsdom';
 
 export const createClient = (
   context: { req: Request; res: Response },
@@ -64,4 +67,26 @@ export const getRelatedDocs = async (
     return undefined;
   }
   return documents.documents;
+};
+
+export const customGoogleSearch = async (query: string) => {
+  const googleSearch = google.customsearch({
+    version: 'v1',
+  });
+  const searchResults = await googleSearch.cse.list({
+    q: query,
+    cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
+    key: process.env.GOOGLE_CLOUD_API_KEY,
+  });
+  // if (searchResults?.data?.items?.at(0)?.link) {
+  //   const firstPage = await axios.get(searchResults.data.items.at(0)!.link!);
+  //   // console.log(firstPage.data);
+  //   const dom = new jsdom.JSDOM(`${firstPage.data}`);
+  //   const paragraphs = dom.window.document.querySelectorAll('p');
+  //   console.log(paragraphs);
+  // }
+
+  return searchResults.data.items?.map((item) => {
+    return { displayLink: item.displayLink, link: item.link };
+  });
 };
