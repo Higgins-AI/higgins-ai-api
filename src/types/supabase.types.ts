@@ -38,18 +38,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          industry: string | null
           title: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id: string
+          industry?: string | null
           title?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          industry?: string | null
           title?: string | null
           user_id?: string
         }
@@ -433,6 +436,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      industry: {
+        Row: {
+          completion_temperature: number | null
+          created_at: string
+          greeting: string | null
+          id: string
+          name: string | null
+          system_directive: string | null
+        }
+        Insert: {
+          completion_temperature?: number | null
+          created_at?: string
+          greeting?: string | null
+          id?: string
+          name?: string | null
+          system_directive?: string | null
+        }
+        Update: {
+          completion_temperature?: number | null
+          created_at?: string
+          greeting?: string | null
+          id?: string
+          name?: string | null
+          system_directive?: string | null
+        }
+        Relationships: []
       }
       public_chat: {
         Row: {
