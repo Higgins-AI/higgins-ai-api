@@ -25,13 +25,14 @@ router.route('/').get(async (req, res) => {
     const supabase = createClient({ req, res }, token);
     const { data: industries, error: industriesError } = await supabase
       .from('industry')
-      .select()
+      .select('*')
       .order('created_at', { ascending: true });
     if (industriesError) {
       res.status(500);
       res.send({ ok: false, data: [], message: industriesError.message });
       return;
     }
+    console.log(industries);
     res.status(200);
     res.send({ ok: true, data: industries, message: 'success' });
   } catch (error: any) {
