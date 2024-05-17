@@ -1,7 +1,6 @@
 import { ChromaClient, OpenAIEmbeddingFunction } from 'chromadb';
 import express from 'express';
 import dotenv from 'dotenv';
-import cookieParser from 'cookie-parser';
 import axios from 'axios';
 import { createClient } from '../../utils/utils';
 import { OpenAiCompletion } from '../../../types/types';
@@ -117,9 +116,9 @@ router.route('/').post(async (req, res) => {
     const supportingDocs = docs?.at(0)?.map((doc) => doc?.replace('\n', ' '));
     const defaultSystemDirective = `Your name is Higgins. You are a helpful assistant for the company ${organization}. You may be provided with some supporting context that you can use to help you respond to the user's next prompt. If the supporting context does not closely relate to the user's prompt, ignore it as you formulate a response. If the user's prompt refers to any previous messages, ignore the supporting context as you formulate a response. The supporting context will be in the following format: <context>supporting context</context>.
     
-    <context>${supportingDocs}</context>`;
+    <context>${JSON.stringify(supportingDocs)}</context>`;
 
-    const response = await axios.post(
+    const response = await axios.post<OpenAiCompletion>(
       `https://api.openai.com/v1/chat/completions`,
       {
         model: 'gpt-4-turbo-preview',
@@ -141,8 +140,8 @@ router.route('/').post(async (req, res) => {
         },
       }
     );
-    if (response.statusText === 'OK') {
-      const completionData = response.data as OpenAiCompletion;
+    if (response.status === 200) {
+      const completionData = response.data;
 
       const { data, error } = await supabase
         .from('higgins_chat_completion')

@@ -1,15 +1,14 @@
-import { ChromaClient, OpenAIEmbeddingFunction } from 'chromadb';
 import express from 'express';
 import dotenv from 'dotenv';
-import cookieParser from 'cookie-parser';
 import axios from 'axios';
 import {
   createClient,
   customGoogleSearch,
   getRelatedDocs,
 } from '../../utils/utils';
-import { OpenAiCompletion } from '../../../types/types';
+import {OpenAiCompletion} from '../../../types/types';
 import jwt from 'jsonwebtoken';
+
 dotenv.config();
 
 const router = express.Router();
@@ -21,37 +20,37 @@ router.route('/').get(async (req, res) => {
     const chatId = req?.query?.chat_id as string | undefined;
     if (!userId) {
       res.status(400);
-      res.send({ ok: false, data: [], message: 'Authentication Error' });
+      res.send({ok: false, data: [], message: 'Authentication Error'});
       return;
     }
     if (!chatId) {
       res.status(400);
-      res.send({ ok: false, data: [], message: 'No Chat Input Provided' });
+      res.send({ok: false, data: [], message: 'No Chat Input Provided'});
       return;
     }
     const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
+      {sub: userId, role: 'authenticated'},
       process.env.SUPABASE_JWT_SECRET!
     );
-    const supabase = createClient({ req, res }, token);
-    const { data, error } = await supabase
+    const supabase = createClient({req, res}, token);
+    const {data, error} = await supabase
       .from('chat_completion')
       .select()
       .eq('user_id', userId)
       .eq('chat_id', chatId)
-      .order('created', { ascending: true });
+      .order('created', {ascending: true});
     if (error) {
       console.log(error);
       res.status(500);
-      res.send({ ok: false, data: [], message: error.message });
+      res.send({ok: false, data: [], message: error.message});
       return;
     }
     res.status(200);
-    res.send({ ok: true, data: data, message: 'success' });
+    res.send({ok: true, data: data, message: 'success'});
   } catch (error: any) {
     console.log(error);
     res.status(500);
-    res.send({ ok: false, data: [], message: 'Something went wrong' });
+    res.send({ok: false, data: [], message: 'Something went wrong'});
     return;
   }
 });
@@ -68,29 +67,29 @@ router.route('/').post(async (req, res) => {
     const chatId = req?.body?.chat_id as string | undefined;
     if (!userInput) {
       res.status(400);
-      res.send({ ok: false, data: [], message: 'No User Input Provided' });
+      res.send({ok: false, data: [], message: 'No User Input Provided'});
       return;
     }
     if (!userId) {
       res.status(400);
-      res.send({ ok: false, data: [], message: 'Authentication Error' });
+      res.send({ok: false, data: [], message: 'Authentication Error'});
       return;
     }
     if (!chatId) {
       res.status(400);
-      res.send({ ok: false, data: [], message: 'Invalid Request' });
+      res.send({ok: false, data: [], message: 'Invalid Request'});
       return;
     }
     const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
+      {sub: userId, role: 'authenticated'},
       process.env.SUPABASE_JWT_SECRET!
     );
     const docs = await getRelatedDocs(userInput, 'higgins');
     const supportingDocs = docs?.at(0)?.map((doc) => doc?.replace('\n', ' '));
-    const supabase = createClient({ req, res }, token);
+    const supabase = createClient({req, res}, token);
     const googleSearchResults = await customGoogleSearch(userInput);
     console.log(googleSearchResults);
-    const response = await axios.post(
+    const response = await axios.post<OpenAiCompletion>(
       `https://api.openai.com/v1/chat/completions`,
       {
         model: 'gpt-4-turbo-preview',
@@ -100,11 +99,11 @@ router.route('/').post(async (req, res) => {
             role: 'system',
             content: `Your name is Higgins. You are a helpful AI assistant. You may be provided with some supporting context that you can use to help you respond to the user's next prompt. If the supporting context does not closely relate to the user's prompt, ignore it as you formulate a response. If the user's prompt refers to any previous messages, ignore the supporting context as you formulate a response. Your response should always be in markdown format. The supporting context will be in the following format: <context>supporting context</context>. You may also be provided an array of touples containing display links and links. If you are provided this array, tell the user that they may find more information about their question by checking out the links. The display link should be the text that is shown to the user, and the link url should be the link in the touple. The array of links will be in the following format: <linksArray>[array]</linksArray> A touple in this array will have the following format: '{displayLink: "example.com", link: "https://example.com"}'
     
-            <context>${supportingDocs}</context>
-            <linksArray>${googleSearchResults}</linksArray>
+            <context>${JSON.stringify(supportingDocs)}</context>
+            <linksArray>${JSON.stringify(googleSearchResults)}</linksArray>
             `,
           },
-          { role: 'user', content: userInput },
+          {role: 'user', content: userInput},
         ],
       },
       {
@@ -113,9 +112,9 @@ router.route('/').post(async (req, res) => {
         },
       }
     );
-    if (response.statusText === 'OK') {
-      const completionData = response.data as OpenAiCompletion;
-      const { data, error } = await supabase
+    if (response.status === 200) {
+      const completionData = response.data;
+      const {data, error} = await supabase
         .from('chat_completion')
         .upsert({
           id: completionData.id,
@@ -138,21 +137,21 @@ router.route('/').post(async (req, res) => {
       if (error) {
         console.log(error);
         res.status(500);
-        res.send({ ok: false, data: [], message: error.message });
+        res.send({ok: false, data: [], message: error.message});
         return;
       }
       res.status(200);
-      res.send({ ok: true, data: data, message: 'success' });
+      res.send({ok: true, data: data, message: 'success'});
     } else {
       console.log(response.statusText);
       res.status(500);
-      res.send({ ok: false, data: [], message: response.statusText });
+      res.send({ok: false, data: [], message: response.statusText});
       return;
     }
   } catch (error: any) {
     console.log(error);
     res.status(500);
-    res.send({ ok: false, data: [], message: 'Something went wrong' });
+    res.send({ok: false, data: [], message: 'Something went wrong'});
     return;
   }
 });
@@ -165,20 +164,20 @@ router.route('/:id').get(async (req, res) => {
     const completionId = req?.params?.id;
     if (!userId) {
       res.status(400);
-      res.send({ ok: false, data: [], message: 'Authentication Error' });
+      res.send({ok: false, data: [], message: 'Authentication Error'});
       return;
     }
     if (!chatId) {
       res.status(400);
-      res.send({ ok: false, data: [], message: 'No Chat Input Provided' });
+      res.send({ok: false, data: [], message: 'No Chat Input Provided'});
       return;
     }
     const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
+      {sub: userId, role: 'authenticated'},
       process.env.SUPABASE_JWT_SECRET!
     );
-    const supabase = createClient({ req, res }, token);
-    const { data, error } = await supabase
+    const supabase = createClient({req, res}, token);
+    const {data, error} = await supabase
       .from('chat_completion')
       .select()
       .eq('user_id', userId)
@@ -188,15 +187,15 @@ router.route('/:id').get(async (req, res) => {
     if (error) {
       console.log(error);
       res.status(500);
-      res.send({ ok: false, data: [], message: error.message });
+      res.send({ok: false, data: [], message: error.message});
       return;
     }
     res.status(200);
-    res.send({ ok: true, data: data, message: 'success' });
+    res.send({ok: true, data: data, message: 'success'});
   } catch (error: any) {
     console.log(error);
     res.status(500);
-    res.send({ ok: false, data: [], message: 'Something went wrong' });
+    res.send({ok: false, data: [], message: 'Something went wrong'});
     return;
   }
 });
