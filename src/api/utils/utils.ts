@@ -49,6 +49,10 @@ export const getRelatedDocs = async (
   inputString: string,
   organization: string
 ) => {
+  console.log(organization);
+  if (!organization) {
+    return undefined;
+  }
   const chromaClient = new ChromaClient({
     path: process.env.CHROMADB_PRO_URL,
   });
@@ -66,6 +70,7 @@ export const getRelatedDocs = async (
   if (!documents.documents) {
     return undefined;
   }
+  console.log(documents);
   return documents.documents;
 };
 
