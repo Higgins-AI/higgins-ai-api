@@ -1,22 +1,21 @@
 import express from "express";
 import dotenv from "dotenv";
-import cookie from "cookie-parser";
-import { createClient } from "../../utils/utils";
-import jwt from "jsonwebtoken";
+import {deleteFeedback, fetchCompletionFeedback, upsertFeedback} from "../../service/feedback.service";
+import {PostFeedbackRequestBody} from "../../models/feedback.model";
 dotenv.config();
 
 const router = express.Router();
 
-router.route("/").get(async (req, res) => {
+router.route("/").get(async (req: express.Request<any, any, any, { user_id: string; completion_id: string; chat_id: string}>, res) => {
   try {
-    console.log(`USER_ID: ${req?.query?.user_id} – GET FEEDBACK`);
-    const userId = req?.query?.user_id as string | undefined;
-    const completionId = req?.query?.completion_id as string | undefined;
-    const chatId = req?.query?.chat_id as string | undefined;
+    console.log(`USER_ID: ${req.query.user_id} – GET FEEDBACK`);
+    const userId = req.query.user_id;
+    const completionId = req.query.completion_id;
+    const chatId = req.query.chat_id;
 
     if (!userId) {
-      res.status(400);
-      res.send({
+      res.status(401)
+        .send({
         ok: false,
         data: undefined,
         message: "Authentication Error",
@@ -24,8 +23,8 @@ router.route("/").get(async (req, res) => {
       return;
     }
     if (!completionId) {
-      res.status(400);
-      res.send({
+      res.status(400)
+        .json({
         ok: false,
         data: undefined,
         message: "No Completions ID provided",
@@ -33,50 +32,44 @@ router.route("/").get(async (req, res) => {
       return;
     }
     if (!chatId) {
-      res.status(400);
-      res.send({
+      res.status(400)
+        .json({
         ok: false,
         data: undefined,
         message: "Invalid Request",
       });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: "authenticated" },
-      process.env.SUPABASE_JWT_SECRET!
-    );
-    const supabase = createClient({ req, res }, token);
-    const { data, error } = await supabase
-      .from("completion_feedback")
-      .select()
-      .eq("user_id", userId)
-      .eq("completion_id", completionId)
-      .eq("chat_id", chatId);
+
+    const { data, error } = await fetchCompletionFeedback({ req, res }, userId, completionId, chatId)
     if (!error) {
-      res.status(200);
-      res.send({ ok: true, data: data, message: "success" });
+      res.status(200)
+        .json({ ok: true, data: data, message: "success" });
       return;
     } else {
       throw new Error(error.message);
     }
   } catch (error: any) {
     console.log(error);
-    res.status(500);
-    res.send({ ok: false, data: [], message: "Something went wrong" });
+    res.status(500)
+      .json({ ok: false, data: [], message: "Something went wrong" });
     return;
   }
 });
 
-router.route("/").post(async (req, res) => {
+router.route("/").post(async (req: express.Request<any, any, PostFeedbackRequestBody>, res) => {
   try {
-    console.log(`USER_ID: ${req?.body?.user_id} – POST FEEDBACK`);
-    const userId = req?.body?.user_id as string | undefined;
-    const completionId = req?.body?.completion_id as string | undefined;
-    const chatId = req?.body?.chat_id as string | undefined;
-    const ratingId = req?.body?.rating_id as string | undefined;
-    const rating = req?.body?.rating as string | undefined;
-    const prompt = req?.body?.prompt as string | undefined;
-    const completion = req?.body?.completion as string | undefined;
+    console.log(`USER_ID: ${req.body.user_id} – POST FEEDBACK`);
+    const {
+      user_id: userId,
+      completion_id: completionId,
+      chat_id: chatId,
+      rating_id: ratingId,
+      rating,
+      prompt,
+      completion,
+    } = req.body
+
     if (!chatId) {
       res.status(400);
       res.send({
@@ -140,30 +133,11 @@ router.route("/").post(async (req, res) => {
       });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: "authenticated" },
-      process.env.SUPABASE_JWT_SECRET!
-    );
-    const supabase = createClient({ req, res }, token);
-    const { data, error } = await supabase
-      .from("completion_feedback")
-      .upsert([
-        {
-          user_id: userId,
-          id: ratingId,
-          chat_id: chatId,
-          completion_id: completionId,
-          created_at: new Date().toISOString(),
-          rating,
-          prompt,
-          completion,
-        },
-      ])
-      .select()
-      .single();
+
+    const { data, error } = await upsertFeedback({ req, res }, userId, ratingId, chatId, completionId, rating, prompt, completion)
     if (data) {
-      res.status(200);
-      res.send({ ok: true, data: data, message: "success" });
+      res.status(200)
+        .json({ ok: true, data: data, message: "success" });
       return;
     }
     if (error) {
@@ -171,18 +145,20 @@ router.route("/").post(async (req, res) => {
     }
   } catch (error: any) {
     console.log(error);
-    res.status(500);
-    res.send({ ok: false, data: [], message: "Something went wrong" });
+    res.status(500)
+      .json({ ok: false, data: [], message: "Something went wrong" });
     return;
   }
 });
 
-router.route("/").delete(async (req, res) => {
+router.route("/").delete(async (req: express.Request<any, any, any, { user_id: string; completion_id: string; chat_id: string}>, res) => {
   try {
     console.log(`USER_ID: ${req?.query?.user_id} – DELETE FEEDBACK`);
-    const userId = req?.query?.user_id as string | undefined;
-    const completionId = req?.query?.completion_id as string | undefined;
-    const chatId = req?.query?.chat_id as string | undefined;
+    const {
+      user_id: userId,
+      chat_id: chatId,
+      completion_id: completionId,
+    } = req.query
 
     if (!userId) {
       res.status(400);
@@ -211,21 +187,11 @@ router.route("/").delete(async (req, res) => {
       });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: "authenticated" },
-      process.env.SUPABASE_JWT_SECRET!
-    );
-    const supabase = createClient({ req, res }, token);
-    const { error } = await supabase
-      .from("completion_feedback")
-      .delete()
-      .eq("user_id", userId)
-      .eq("completion_id", completionId)
-      .eq("chat_id", chatId)
-      .single();
+
+    const { error } = await deleteFeedback({ req, res }, userId, completionId, chatId)
     if (!error) {
-      res.status(200);
-      res.send({ ok: true, data: [], message: "success" });
+      res.status(200)
+        .json({ ok: true, data: [], message: "success" });
       return;
     }
     if (error) {
@@ -233,8 +199,8 @@ router.route("/").delete(async (req, res) => {
     }
   } catch (error: any) {
     console.log(error);
-    res.status(500);
-    res.send({ ok: false, data: [], message: "Something went wrong" });
+    res.status(500)
+      .json({ ok: false, data: [], message: "Something went wrong" });
     return;
   }
 });

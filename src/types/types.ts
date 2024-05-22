@@ -1,3 +1,5 @@
+import { Request, Response } from 'express'
+
 export interface OpenAiCompletion {
   id: string;
   object: string;
@@ -40,4 +42,9 @@ export interface OpenAiCompletion {
     completion_tokens: number;
     total_tokens: number;
   };
+}
+
+export interface ReqResCtx {
+  req: Request
+  res: Response
 }

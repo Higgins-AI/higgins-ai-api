@@ -1,35 +1,23 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import cookie from 'cookie-parser';
-import { createClient } from '../../utils/utils';
-import jwt from 'jsonwebtoken';
+import {fetchAllIndustries} from "../../service/industry.service";
 
 dotenv.config();
 
 const router = express.Router();
 
-router.route('/').get(async (req, res) => {
+router.route('/').get(async (req: express.Request<any, any, any, { user_id: string }>, res) => {
   try {
     console.log(`USER_ID: ${req?.query?.user_id} – GET INDUSTRIES`);
-    const userId = req?.query?.user_id as string | undefined;
+    const userId = req.query.user_id;
 
     if (!userId) {
-      res.status(400);
-      res.send({ ok: false, data: [], message: 'Authentication Error' });
+      res.status(400).json({ ok: false, data: [], message: 'Authentication Error' });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
-      process.env.SUPABASE_JWT_SECRET!
-    );
-    const supabase = createClient({ req, res }, token);
-    const { data: industries, error: industriesError } = await supabase
-      .from('industry')
-      .select('*')
-      .order('created_at', { ascending: true });
+    const { data: industries, error: industriesError } = await fetchAllIndustries({ req, res }, userId)
     if (industriesError) {
-      res.status(500);
-      res.send({ ok: false, data: [], message: industriesError.message });
+      res.status(500).json({ ok: false, data: [], message: industriesError.message });
       return;
     }
     console.log(industries);
@@ -37,8 +25,7 @@ router.route('/').get(async (req, res) => {
     res.send({ ok: true, data: industries, message: 'success' });
   } catch (error: any) {
     console.log(error);
-    res.status(500);
-    res.send({ ok: false, data: [], message: 'Something went wrong' });
+    res.status(500).json({ ok: false, data: [], message: 'Something went wrong' });
     return;
   }
 });
