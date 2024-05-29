@@ -28,7 +28,7 @@ export const getRelatedDocs = async (
   if (!documents.documents) {
     return undefined;
   }
-  console.log(documents);
+  // console.log(documents.documents);
   return documents.documents;
 };
 
