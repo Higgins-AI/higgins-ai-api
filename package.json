@@ -13,6 +13,7 @@
   "author": "Aron Hawkins",
   "license": "ISC",
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^5.0.8",
     "@supabase/ssr": "^0.1.0",
     "@supabase/supabase-js": "^2.39.7",
     "axios": "^1.6.7",
