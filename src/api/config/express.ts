@@ -1,9 +1,8 @@
-import express, {ErrorRequestHandler, NextFunction} from "express";
+import express from "express";
 import cors from "cors";
 import {json as _json} from "express";
 import router from "../routes/v1";
 import cookies from "cookie-parser";
-import {ClerkExpressWithAuth, clerkClient, ClerkExpressRequireAuth} from "@clerk/clerk-sdk-node";
 
 /**
  * Express instance
@@ -19,19 +18,16 @@ app.use(cookies());
 // mount api v1 routes
 app.use("/api/v1", router);
 
-app.get('/protected-endpoint', ClerkExpressRequireAuth(), (req, res) => {
+// Global error handler
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.message);
 
-  // @ts-ignore
-  console.log(req.auth.sessionClaims.orgs)
-
-  // @ts-ignore
-  clerkClient.organizations.getOrganization({organizationId: Object.keys(req.auth.sessionClaims.orgs)[0]})
-    .then(org => {
-      console.log(org)
-    })
-  // @ts-ignore
-  res.json(req.auth)
-})
+  if (err.message.includes('Unauthenticated')) {
+    res.status(401).json({ok: false, data: [], message: err.message});
+  } else {
+    next(err)
+  }
+});
 
 
 export default app;
