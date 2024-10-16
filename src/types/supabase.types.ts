@@ -124,18 +124,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          organization: string | null
           session_id: string | null
           title: string | null
         }
         Insert: {
           created_at?: string
           id: string
+          organization?: string | null
           session_id?: string | null
           title?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          organization?: string | null
           session_id?: string | null
           title?: string | null
         }
@@ -146,28 +149,34 @@ export type Database = {
           chat_id: string | null
           content: string
           created_at: string
+          default_prompts: Json[] | null
           id: string
           links: string | null
           role: string | null
           suggested_prompts: string | null
+          suggested_prompts_json: Json[] | null
         }
         Insert: {
           chat_id?: string | null
           content: string
           created_at?: string
+          default_prompts?: Json[] | null
           id: string
           links?: string | null
           role?: string | null
           suggested_prompts?: string | null
+          suggested_prompts_json?: Json[] | null
         }
         Update: {
           chat_id?: string | null
           content?: string
           created_at?: string
+          default_prompts?: Json[] | null
           id?: string
           links?: string | null
           role?: string | null
           suggested_prompts?: string | null
+          suggested_prompts_json?: Json[] | null
         }
         Relationships: [
           {
@@ -296,6 +305,7 @@ export type Database = {
           prompt: string | null
           prompt_tokens: number | null
           role: string | null
+          suggested_prompts: Json | null
           total_tokens: number | null
           user_id: string
         }
@@ -313,6 +323,7 @@ export type Database = {
           prompt?: string | null
           prompt_tokens?: number | null
           role?: string | null
+          suggested_prompts?: Json | null
           total_tokens?: number | null
           user_id: string
         }
@@ -330,6 +341,7 @@ export type Database = {
           prompt?: string | null
           prompt_tokens?: number | null
           role?: string | null
+          suggested_prompts?: Json | null
           total_tokens?: number | null
           user_id?: string
         }
@@ -460,6 +472,72 @@ export type Database = {
           greeting?: string | null
           id?: string
           name?: string | null
+          system_directive?: string | null
+        }
+        Relationships: []
+      }
+      organization: {
+        Row: {
+          completion_temperature: number | null
+          created_at: string
+          default_prompts: Json[] | null
+          greeting: string | null
+          id: string
+          name: string | null
+          path_identifier_phrase: string | null
+          system_directive: string | null
+        }
+        Insert: {
+          completion_temperature?: number | null
+          created_at?: string
+          default_prompts?: Json[] | null
+          greeting?: string | null
+          id?: string
+          name?: string | null
+          path_identifier_phrase?: string | null
+          system_directive?: string | null
+        }
+        Update: {
+          completion_temperature?: number | null
+          created_at?: string
+          default_prompts?: Json[] | null
+          greeting?: string | null
+          id?: string
+          name?: string | null
+          path_identifier_phrase?: string | null
+          system_directive?: string | null
+        }
+        Relationships: []
+      }
+      organization_testing: {
+        Row: {
+          completion_temperature: number | null
+          created_at: string
+          default_prompts: Json[] | null
+          greeting: string | null
+          id: string
+          name: string | null
+          path_identifier_phrase: string | null
+          system_directive: string | null
+        }
+        Insert: {
+          completion_temperature?: number | null
+          created_at?: string
+          default_prompts?: Json[] | null
+          greeting?: string | null
+          id?: string
+          name?: string | null
+          path_identifier_phrase?: string | null
+          system_directive?: string | null
+        }
+        Update: {
+          completion_temperature?: number | null
+          created_at?: string
+          default_prompts?: Json[] | null
+          greeting?: string | null
+          id?: string
+          name?: string | null
+          path_identifier_phrase?: string | null
           system_directive?: string | null
         }
         Relationships: []
@@ -668,6 +746,7 @@ export type Database = {
           owner_id: string | null
           path_tokens: string[] | null
           updated_at: string | null
+          user_metadata: Json | null
           version: string | null
         }
         Insert: {
@@ -681,6 +760,7 @@ export type Database = {
           owner_id?: string | null
           path_tokens?: string[] | null
           updated_at?: string | null
+          user_metadata?: Json | null
           version?: string | null
         }
         Update: {
@@ -694,6 +774,7 @@ export type Database = {
           owner_id?: string | null
           path_tokens?: string[] | null
           updated_at?: string | null
+          user_metadata?: Json | null
           version?: string | null
         }
         Relationships: [
@@ -715,6 +796,7 @@ export type Database = {
           key: string
           owner_id: string | null
           upload_signature: string
+          user_metadata: Json | null
           version: string
         }
         Insert: {
@@ -725,6 +807,7 @@ export type Database = {
           key: string
           owner_id?: string | null
           upload_signature: string
+          user_metadata?: Json | null
           version: string
         }
         Update: {
@@ -735,6 +818,7 @@ export type Database = {
           key?: string
           owner_id?: string | null
           upload_signature?: string
+          user_metadata?: Json | null
           version?: string
         }
         Relationships: [
@@ -871,6 +955,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      operation: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       search: {
         Args: {
           prefix: string
@@ -981,4 +1069,19 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
