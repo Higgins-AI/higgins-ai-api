@@ -108,7 +108,7 @@ router.route('/').post(async (req, res) => {
     const response = await axios.post<OpenAiCompletion>(
       `https://api.openai.com/v1/chat/completions`,
       {
-        model: 'gpt-4-turbo-preview',
+        model: 'gpt-4o-mini',
         messages: [
           ...messages,
           {

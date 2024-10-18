@@ -1,11 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import axios from 'axios';
-import {
-  createClient,
-  customGoogleSearch,
-  getRelatedDocs,
-} from '../../utils/utils';
+import { createClient, customGoogleSearch, getRelatedDocs } from '../../utils/utils';
 import { OpenAiCompletion } from '../../../types/types';
 import jwt from 'jsonwebtoken';
 
@@ -28,17 +24,9 @@ router.route('/').get(async (req, res) => {
       res.send({ ok: false, data: [], message: 'No Chat Input Provided' });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
-      process.env.SUPABASE_JWT_SECRET!
-    );
+    const token = jwt.sign({ sub: userId, role: 'authenticated' }, process.env.SUPABASE_JWT_SECRET!);
     const supabase = createClient({ req, res }, token);
-    const { data, error } = await supabase
-      .from('chat_completion')
-      .select()
-      .eq('user_id', userId)
-      .eq('chat_id', chatId)
-      .order('created', { ascending: true });
+    const { data, error } = await supabase.from('chat_completion').select().eq('user_id', userId).eq('chat_id', chatId).order('created', { ascending: true });
     if (error) {
       console.log(error);
       res.status(500);
@@ -59,10 +47,7 @@ router.route('/').post(async (req, res) => {
   try {
     console.log(`USER_ID: ${req?.body?.user_id} – POST COMPLETION`);
     const userInput = req?.body?.user_input as string | undefined;
-    const messages =
-      (req?.body?.messages as
-        | { role: string; content: string }[]
-        | undefined) || [];
+    const messages = (req?.body?.messages as { role: string; content: string }[] | undefined) || [];
     const userId = req?.body?.user_id as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
     if (!userInput) {
@@ -80,17 +65,10 @@ router.route('/').post(async (req, res) => {
       res.send({ ok: false, data: [], message: 'Invalid Request' });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
-      process.env.SUPABASE_JWT_SECRET!
-    );
+    const token = jwt.sign({ sub: userId, role: 'authenticated' }, process.env.SUPABASE_JWT_SECRET!);
 
     const supabase = createClient({ req, res }, token);
-    const { data: chat, error: chatError } = await supabase
-      .from('chat')
-      .select()
-      .eq('id', chatId)
-      .single();
+    const { data: chat, error: chatError } = await supabase.from('chat').select().eq('id', chatId).single();
     if (chatError) {
       console.log(chatError);
       res.status(500);
@@ -98,11 +76,7 @@ router.route('/').post(async (req, res) => {
       return;
     }
     const industryName = chat.industry || '';
-    const { data: industry, error: industryError } = await supabase
-      .from('industry')
-      .select()
-      .eq('name', industryName)
-      .single();
+    const { data: industry, error: industryError } = await supabase.from('industry').select().eq('name', industryName).single();
     if (industryError) {
       console.log(industryError);
       // res.status(500);
@@ -110,12 +84,7 @@ router.route('/').post(async (req, res) => {
       // return;
     }
 
-    const docs = await getRelatedDocs(
-      userInput,
-      industry?.name?.toLowerCase() === 'all'
-        ? 'all-industries'
-        : industry?.name?.toLowerCase() || ''
-    );
+    const docs = await getRelatedDocs(userInput, industry?.name?.toLowerCase() === 'all' ? 'all-industries' : industry?.name?.toLowerCase() || '');
     const supportingDocs = docs?.at(0)?.map((doc) => doc?.replace('\n', ' '));
     console.log(supportingDocs);
     const googleSearchResults = await customGoogleSearch(userInput);
@@ -123,7 +92,7 @@ router.route('/').post(async (req, res) => {
     const response = await axios.post<OpenAiCompletion>(
       `https://api.openai.com/v1/chat/completions`,
       {
-        model: 'gpt-4-turbo-preview',
+        model: 'gpt-4o-mini',
         messages: [
           ...messages,
           {
@@ -207,18 +176,9 @@ router.route('/:id').get(async (req, res) => {
       res.send({ ok: false, data: [], message: 'No Chat Input Provided' });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
-      process.env.SUPABASE_JWT_SECRET!
-    );
+    const token = jwt.sign({ sub: userId, role: 'authenticated' }, process.env.SUPABASE_JWT_SECRET!);
     const supabase = createClient({ req, res }, token);
-    const { data, error } = await supabase
-      .from('chat_completion')
-      .select()
-      .eq('user_id', userId)
-      .eq('chat_id', chatId)
-      .eq('id', completionId)
-      .single();
+    const { data, error } = await supabase.from('chat_completion').select().eq('user_id', userId).eq('chat_id', chatId).eq('id', completionId).single();
     if (error) {
       console.log(error);
       res.status(500);
