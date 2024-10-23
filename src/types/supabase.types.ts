@@ -73,6 +73,7 @@ export type Database = {
           prompt: string | null
           prompt_tokens: number | null
           role: string | null
+          suggested_prompts: Json | null
           total_tokens: number | null
           user_id: string
         }
@@ -90,6 +91,7 @@ export type Database = {
           prompt?: string | null
           prompt_tokens?: number | null
           role?: string | null
+          suggested_prompts?: Json | null
           total_tokens?: number | null
           user_id: string
         }
@@ -107,6 +109,7 @@ export type Database = {
           prompt?: string | null
           prompt_tokens?: number | null
           role?: string | null
+          suggested_prompts?: Json | null
           total_tokens?: number | null
           user_id?: string
         }

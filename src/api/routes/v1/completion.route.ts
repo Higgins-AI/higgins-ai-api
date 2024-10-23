@@ -2,8 +2,9 @@ import express from 'express';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import { createClient, customGoogleSearch, getRelatedDocs } from '../../utils/utils';
-import { OpenAiCompletion } from '../../../types/types';
+import { OpenAiCompletion, SuggestedPrompts } from '../../../types/types';
 import jwt from 'jsonwebtoken';
+import { Json } from '../../../types/supabase.types';
 
 dotenv.config();
 
@@ -109,6 +110,49 @@ router.route('/').post(async (req, res) => {
           { role: 'user', content: userInput },
         ],
         temperature: industry?.completion_temperature || 0.7,
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'get_recommended_prompts',
+              description:
+                'Get recommended prompts for the user to use to continue the conversation or help the user provide you with more information to help you formulate a response. Only suggest prompts that will help you formulate a response to the user. Each prompt should be between 2 to 5 words in length. You may provide between 1 and 4 prompts.',
+              strict: false,
+              parameters: {
+                type: 'object',
+                properties: {
+                  content: {
+                    type: 'string',
+                    description: 'The conversational response to the user.',
+                  },
+                  prompts: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'number',
+                          description: 'unique identifier for this prompt object',
+                        },
+                        label: {
+                          type: 'string',
+                          description: 'The label for the button that the user will interact with',
+                        },
+                        value: {
+                          type: 'string',
+                          description: 'The value that will be used as the actual prompt when the button is clicked',
+                        },
+                      },
+                      required: ['id', 'label', 'value'],
+                    },
+                    description: 'A recommended prompt for the user to use as their next response in a conversation.',
+                  },
+                },
+                required: ['content', 'prompts'],
+              },
+            },
+          },
+        ],
       },
       {
         headers: {
@@ -118,6 +162,19 @@ router.route('/').post(async (req, res) => {
     );
     if (response.status === 200) {
       const completionData = response.data;
+      let suggestedPrompts: SuggestedPrompts | undefined = undefined;
+      if (completionData.choices[0].finish_reason === 'tool_calls') {
+        // @ts-expect-error tool_calls should exist if it is a tool call
+        console.log(completionData.choices[0].message.tool_calls[0].function.arguments);
+        // @ts-expect-error tool_calls should exist if it is a tool call
+        suggestedPrompts = JSON.parse(completionData.choices[0].message.tool_calls[0].function.arguments) as SuggestedPrompts | undefined;
+        console.log(suggestedPrompts);
+      }
+      let suggestedPromptsContent, prompts;
+      if (suggestedPrompts) {
+        suggestedPromptsContent = suggestedPrompts.content;
+        prompts = suggestedPrompts.prompts;
+      }
       const { data, error } = await supabase
         .from('chat_completion')
         .upsert({
@@ -126,7 +183,7 @@ router.route('/').post(async (req, res) => {
           created: completionData.created,
           model: completionData.model,
           role: completionData.choices[0].message.role,
-          message: completionData.choices[0].message.content,
+          message: completionData.choices[0].message.content || suggestedPromptsContent || '',
           finish_reason: completionData.choices[0].finish_reason,
           prompt_tokens: completionData.usage.prompt_tokens,
           completion_tokens: completionData.usage.completion_tokens,
@@ -135,6 +192,7 @@ router.route('/').post(async (req, res) => {
           chat_id: chatId,
           prompt: userInput,
           documents: supportingDocs as string[] | null | undefined,
+          suggested_prompts: prompts as unknown as Json,
         })
         .select()
         .single();
