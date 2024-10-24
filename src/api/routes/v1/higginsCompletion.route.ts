@@ -5,6 +5,7 @@ import axios from 'axios';
 import { createClient, getRelatedDocs } from '../../utils/utils';
 import { OpenAiCompletion, SuggestedPrompts } from '../../../types/types';
 import jwt from 'jsonwebtoken';
+import { Json } from '../../../types/supabase.types';
 dotenv.config();
 
 const router = express.Router();
@@ -125,6 +126,7 @@ router.route('/').post(async (req, res) => {
               name: 'get_recommended_prompts',
               description:
                 'Get recommended prompts for the user to use to continue the conversation or help the user provide you with more information to help you formulate a response. Only suggest prompts that will help you formulate a response to the user. Each prompt should be between 2 to 5 words in length. You may provide between 1 and 4 prompts.',
+              strict: false,
               parameters: {
                 type: 'object',
                 properties: {
@@ -132,84 +134,30 @@ router.route('/').post(async (req, res) => {
                     type: 'string',
                     description: 'The conversational response to the user.',
                   },
-                  prompt_1: {
-                    type: 'object',
-                    description: 'The first recommended prompt.',
-                    properties: {
-                      id: {
-                        type: 'number',
-                        description: 'unique identifier for this prompt object',
+                  prompts: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'number',
+                          description: 'unique identifier for this prompt object',
+                        },
+                        label: {
+                          type: 'string',
+                          description: 'The label for the button that the user will interact with',
+                        },
+                        value: {
+                          type: 'string',
+                          description: 'The value that will be used as the actual prompt when the button is clicked',
+                        },
                       },
-                      label: {
-                        type: 'string',
-                        description: 'The label for the button that the user will interact with',
-                      },
-                      value: {
-                        type: 'string',
-                        description: 'The value that will be used as the actual prompt when the button is clicked',
-                      },
+                      required: ['id', 'label', 'value'],
                     },
-                    required: ['id', 'label', 'value'],
-                  },
-                  prompt_2: {
-                    type: 'object',
-                    description: 'The second recommended prompt.',
-                    properties: {
-                      id: {
-                        type: 'number',
-                        description: 'unique identifier for this prompt object',
-                      },
-                      label: {
-                        type: 'string',
-                        description: 'The label for the button that the user will interact with',
-                      },
-                      value: {
-                        type: 'string',
-                        description: 'The value that will be used as the actual prompt when the button is clicked',
-                      },
-                    },
-                    required: ['id', 'label', 'value'],
-                  },
-                  prompt_3: {
-                    type: 'object',
-                    description: 'The third recommended prompt.',
-                    properties: {
-                      id: {
-                        type: 'number',
-                        description: 'unique identifier for this prompt object',
-                      },
-                      label: {
-                        type: 'string',
-                        description: 'The label for the button that the user will interact with',
-                      },
-                      value: {
-                        type: 'string',
-                        description: 'The value that will be used as the actual prompt when the button is clicked',
-                      },
-                    },
-                    required: ['id', 'label', 'value'],
-                  },
-                  prompt_4: {
-                    type: 'object',
-                    description: 'The fourth recommended prompt.',
-                    properties: {
-                      id: {
-                        type: 'number',
-                        description: 'unique identifier for this prompt object',
-                      },
-                      label: {
-                        type: 'string',
-                        description: 'The label for the button that the user will interact with',
-                      },
-                      value: {
-                        type: 'string',
-                        description: 'The value that will be used as the actual prompt when the button is clicked',
-                      },
-                    },
-                    required: ['id', 'label', 'value'],
+                    description: 'A recommended prompt for the user to use as their next response in a conversation.',
                   },
                 },
-                required: ['content', 'prompt_1'],
+                required: ['content', 'prompts'],
               },
             },
           },
@@ -218,6 +166,7 @@ router.route('/').post(async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
         },
       }
     );
@@ -226,15 +175,12 @@ router.route('/').post(async (req, res) => {
       let suggestedPrompts: SuggestedPrompts | undefined = undefined;
       if (completionData.choices[0].finish_reason === 'tool_calls') {
         // @ts-expect-error tool_calls should exist if it is a tool call
-        console.log(completionData.choices[0].message.tool_calls[0].function.arguments);
-        // @ts-expect-error tool_calls should exist if it is a tool call
-        suggestedPrompts = JSON.parse(completionData.choices[0].message.tool_calls[0].function.arguments) as SuggestedPrompts | undefined;
-        console.log(suggestedPrompts);
+        suggestedPrompts = JSON.parse(completionData.choices[0].message.tool_calls[0].function.arguments) as Prompt[] | undefined;
       }
       let suggestedPromptsContent, prompts;
       if (suggestedPrompts) {
         suggestedPromptsContent = suggestedPrompts.content;
-        prompts = { prompt_1: suggestedPrompts.prompt_1, prompt_2: suggestedPrompts.prompt_2, prompt_3: suggestedPrompts.prompt_3, prompt_4: suggestedPrompts.prompt_4 };
+        prompts = suggestedPrompts.prompts;
       }
       const { data, error } = await supabase
         .from('higgins_chat_completion')
@@ -253,7 +199,7 @@ router.route('/').post(async (req, res) => {
           chat_id: chatId,
           prompt: userInput,
           documents: supportingDocs as string[] | null | undefined,
-          suggested_prompts: prompts,
+          suggested_prompts: prompts as unknown as Json,
         })
         .select()
         .single();
@@ -263,7 +209,6 @@ router.route('/').post(async (req, res) => {
         res.send({ ok: false, data: [], message: error.message });
         return;
       }
-      // console.log(data);
       res.status(200);
       res.send({ ok: true, data: data, message: 'success' });
     } else {
