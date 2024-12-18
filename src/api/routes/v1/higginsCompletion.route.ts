@@ -74,7 +74,7 @@ router.route('/').post(async (req, res) => {
     const messages = (req?.body?.messages as { role: string; content: string }[] | undefined) || [];
     const userId = req?.body?.user_id as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
-    const temperature = req?.body?.chat_id as string | undefined;
+    const temperature = req?.body?.temperature as string | undefined;
     const organization = req?.body?.organization as string | undefined;
     if (!userInput) {
       res.status(400);
@@ -101,7 +101,6 @@ router.route('/').post(async (req, res) => {
 
     const docs = await getRelatedDocs(userInput, organization);
     const supportingDocs = docs?.at(0)?.map((doc) => doc?.replace('\n', ' '));
-    console.log(supportingDocs);
     const defaultSystemDirective = `Your name is Higgins. You are a helpful assistant for the company ${organization}. You may be provided with some supporting context that you can use to help you respond to the user's next prompt. If the supporting context does not closely relate to the user's prompt, ignore it as you formulate a response. If the user's prompt refers to any previous messages, ignore the supporting context as you formulate a response. The supporting context will be in the following format: <context>supporting context</context>.
     
     <context>${JSON.stringify(supportingDocs)}</context>`;
@@ -125,7 +124,7 @@ router.route('/').post(async (req, res) => {
             function: {
               name: 'get_recommended_prompts',
               description:
-                'Get recommended prompts for the user to use to continue the conversation or help the user provide you with more information to help you formulate a response. Only suggest prompts that will help you formulate a response to the user. Each prompt should be between 2 to 5 words in length. You may provide between 1 and 4 prompts.',
+                'Get recommended prompts for the user to use to continue the conversation or help the user provide you with more information to help you formulate a response. Recommended prompts should potential answers to your most recent response. Never frame a prompt as a question. Each prompt should be between 2 to 5 words in length. You may provide between 1 and 4 prompts.',
               strict: false,
               parameters: {
                 type: 'object',
