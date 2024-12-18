@@ -51,6 +51,9 @@ router.route('/').post(async (req, res) => {
     const messages = (req?.body?.messages as { role: string; content: string }[] | undefined) || [];
     const userId = req?.body?.user_id as string | undefined;
     const chatId = req?.body?.chat_id as string | undefined;
+    const systemDirective = req?.body?.system_directive as string | undefined;
+    const temperature = req?.body?.temperature as string | undefined;
+    const industryName = req?.body?.industry_name as string | undefined;
     if (!userInput) {
       res.status(400);
       res.send({ ok: false, data: [], message: 'No User Input Provided' });
@@ -66,6 +69,11 @@ router.route('/').post(async (req, res) => {
       res.send({ ok: false, data: [], message: 'Invalid Request' });
       return;
     }
+    if (!industryName) {
+      res.status(400);
+      res.send({ ok: false, data: [], message: 'No Industry Provided' });
+      return;
+    }
     const token = jwt.sign({ sub: userId, role: 'authenticated' }, process.env.SUPABASE_JWT_SECRET!);
 
     const supabase = createClient({ req, res }, token);
@@ -76,17 +84,13 @@ router.route('/').post(async (req, res) => {
       res.send({ ok: false, data: [], message: chatError.message });
       return;
     }
-    const industryName = chat.industry || '';
-    const { data: industry, error: industryError } = await supabase.from('industry').select().eq('name', industryName).single();
-    if (industryError) {
-      console.log(industryError);
-      // res.status(500);
-      // res.send({ ok: false, data: [], message: industryError.message });
-      // return;
-    }
 
-    const docs = await getRelatedDocs(userInput, industry?.name?.toLowerCase() === 'all' ? 'all-industries' : industry?.name?.toLowerCase() || '');
+    const docs = await getRelatedDocs(userInput, industryName.toLowerCase() === 'all' ? 'all-industries' : industryName.toLowerCase() || '');
     const supportingDocs = docs?.at(0)?.map((doc) => doc?.replace('\n', ' '));
+
+    const defaultSystemDirective = `Your name is Higgins. You are a helpful assistant for the industry ${industryName}. You may be provided with some supporting context that you can use to help you respond to the user's next prompt. If the supporting context does not closely relate to the user's prompt, ignore it as you formulate a response. If the user's prompt refers to any previous messages, ignore the supporting context as you formulate a response. The supporting context will be in the following format: <context>supporting context</context>. You may also be provided an array of touples containing display links and links. If you are provided this array, tell the user that they may find more information about their question by checking out the links. The display link should be the text that is shown to the user, and the link url should be the link in the touple. The array of links will be in the following format: <linksArray>[array]</linksArray> A touple in this array will have the following format: '{displayLink: "example.com", link: "https://example.com"}
+    
+    <context>${JSON.stringify(supportingDocs)}</context>`;
     console.log(supportingDocs);
     const googleSearchResults = await customGoogleSearch(userInput);
     console.log(googleSearchResults);
@@ -99,8 +103,7 @@ router.route('/').post(async (req, res) => {
           {
             role: 'system',
             content:
-              (industry?.system_directive ||
-                `Your name is Higgins. You are a helpful AI assistant. You may be provided with some supporting context that you can use to help you respond to the user's next prompt. If the supporting context does not closely relate to the user's prompt, ignore it as you formulate a response. If the user's prompt refers to any previous messages, ignore the supporting context as you formulate a response. Your response should always be in markdown format. The supporting context will be in the following format: <context>supporting context</context>. You may also be provided an array of touples containing display links and links. If you are provided this array, tell the user that they may find more information about their question by checking out the links. The display link should be the text that is shown to the user, and the link url should be the link in the touple. The array of links will be in the following format: <linksArray>[array]</linksArray> A touple in this array will have the following format: '{displayLink: "example.com", link: "https://example.com"}`) +
+              (systemDirective || defaultSystemDirective) +
               `
 
             <context>${JSON.stringify(supportingDocs)}</context>
@@ -109,14 +112,14 @@ router.route('/').post(async (req, res) => {
           },
           { role: 'user', content: userInput },
         ],
-        temperature: industry?.completion_temperature || 0.7,
+        temperature: temperature || 0.7,
         tools: [
           {
             type: 'function',
             function: {
               name: 'get_recommended_prompts',
               description:
-                'Get recommended prompts for the user to use to continue the conversation or help the user provide you with more information to help you formulate a response. Only suggest prompts that will help you formulate a response to the user. Each prompt should be between 2 to 5 words in length. You may provide between 1 and 4 prompts.',
+                'Get recommended prompts for the user to use to continue the conversation or help the user provide you with more information to help you formulate a response. Only suggest prompts that will help you formulate a response to the user. Never frame a prompt as a question. Each prompt should be between 2 to 5 words in length. You may provide between 1 and 4 prompts.',
               strict: false,
               parameters: {
                 type: 'object',

@@ -18,15 +18,9 @@ router.route('/').get(async (req, res) => {
       res.send({ ok: false, data: [], message: 'Authentication Error' });
       return;
     }
-    const token = jwt.sign(
-      { sub: userId, role: 'authenticated' },
-      process.env.SUPABASE_JWT_SECRET!
-    );
+    const token = jwt.sign({ sub: userId, role: 'authenticated' }, process.env.SUPABASE_JWT_SECRET!);
     const supabase = createClient({ req, res }, token);
-    const { data: industries, error: industriesError } = await supabase
-      .from('industry')
-      .select('*')
-      .order('created_at', { ascending: true });
+    const { data: industries, error: industriesError } = await supabase.from('industry').select('*').order('created_at', { ascending: true });
     if (industriesError) {
       res.status(500);
       res.send({ ok: false, data: [], message: industriesError.message });
